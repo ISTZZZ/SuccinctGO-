@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Succinct GO</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: url('backgrounGAME.png') no-repeat center center fixed;
+            background-size: cover;
+            overflow: hidden;
+            height: 100vh;
+        }
+        canvas {
+            display: none;
+            margin: 0 auto;
+        }
+        #menu, #gameOver, #musicMenu {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            font-family: 'CrabFont', sans-serif;
+            color: #fff;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            animation: fadeIn 1s ease-in-out;
+            width: 1536px;
+            height: 864px;
+            max-width: 1536px;
+            max-height: 864px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        #menu, #musicMenu {
+            display: block;
+            background: url('backgrounMENU.png') no-repeat center center;
+            background-size: 1536px 864px;
+        }
+        #gameOver {
+            display: none;
+            background: transparent;
+        }
+        .content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 18%;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        #menu h1, #gameOver h1, #musicMenu h1 {
+            font-size: 64px;
+            color: #ff0099;
+            margin: 0 0 10px 0;
+            text-shadow: 0 0 5px #ff0099, 0 0 10px #ff1493;
+            animation: pulse 2s infinite;
+            line-height: 64px;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        #menu p, #gameOver p, #musicMenu p {
+            font-size: 20px;
+            color: #00b7eb;
+            margin: 10px 0;
+            line-height: 20px;
+            text-shadow: none;
+        }
+        button {
+            font-family: 'CrabFont', sans-serif;
+            font-size: 24px;
+            padding: 15px 30px;
+            margin: 10px;
+            width: 200px;
+            height: 60px;
+            line-height: 24px;
+            cursor: pointer;
+            background: linear-gradient(90deg, #ff00ff, #ff1493);
+            color: #fff;
+            border: none;
+            border-radius: 25px;
+            box-shadow: 0 5px 15px rgba(255, 0, 255, 0.5);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 20px rgba(255, 0, 255, 0.7);
+        }
+        button:active {
+            transform: scale(0.95);
+        }
+        @font-face {
+            font-family: 'CrabFont';
+            src: url('Fonts/Fonts.ttf') format('truetype');
+        }
+        #leaderboardContainer {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 15px;
+            font-family: 'CrabFont', sans-serif;
+            color: #fff;
+            text-align: center;
+            max-height: 600px;
+            overflow-y: auto;
+            width: 400px;
+        }
+        #leaderboardContainer h2 {
+            font-size: 36px;
+            color: #ff0099;
+            text-shadow: 0 0 5px #ff0099;
+            margin-bottom: 20px;
+        }
+        #leaderboardList {
+            font-size: 20px;
+            color: #00b7eb;
+            line-height: 28px;
+        }
+        #musicMenu {
+            display: none;
+        }
+        #musicMenu .content {
+            margin-top: 10%; /* Змінив значення, щоб опустити вміст нижче */
+        }
+        #volumeSlider {
+            width: 200px;
+            height: 8px;
+            background: #ff00ff;
+            border-radius: 5px;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+            cursor: pointer;
+        }
+        #volumeSlider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #ff1493;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        #volumeSlider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: #ff1493;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        #currentTrackImg {
+            width: 120px;
+            height: 120px;
+            margin: 8px 0;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(255, 0, 255, 0.5);
+        }
+        #playPauseBtn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(90deg, #ff00ff, #ff1493);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            padding: 0;
+        }
+        #playPauseBtn::before {
+            content: '▶';
+            display: block;
+            transform: translateX(2px);
+        }
+        #playPauseBtn.playing::before {
+            content: '⏸';
+            transform: translateX(0);
+        }
+        #trackList {
+            width: 400px;
+            height: 150px;
+            overflow-y: auto;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            padding: 8px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 5px 15px rgba(255, 0, 255, 0.3);
+        }
+        #trackList::-webkit-scrollbar {
+            width: 6px;
+        }
+        #trackList::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+        }
+        #trackList::-webkit-scrollbar-thumb {
+            background: #ff1493;
+            border-radius: 8px;
+        }
+        .track-item {
+            display: flex;
+            align-items: center;
+            width: 150px;
+            padding: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .track-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .track-item img {
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            margin-right: 6px;
+        }
+        .track-item span {
+            font-size: 14px;
+            color: #00b7eb;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="1440" height="850"></canvas>
+    <div id="menu">
+        <div class="content">
+            <h1>Succinct GO</h1>
+            <p>Welcome to the Ultimate Crab Adventure!</p>
+            <button onclick="startGame()"> Play</button>
+            <button onclick="showMusic()"> Music</button>
+            <button onclick="showLeaderboard()"> Score</button>
+            <button onclick="exitGame()"> Exit</button>
+        </div>
+    </div>
+    <div id="gameOver">
+        <div class="content">
+            <h1>Game Over</h1>
+            <p>Your Score: <span id="finalScore">0</span></p>
+            <button onclick="restartGame()"> Restart</button>
+            <button onclick="returnToMenu()"> Menu</button>
+        </div>
+    </div>
+    <div id="leaderboardContainer">
+        <h2>Leaderboard</h2>
+        <div id="leaderboardList"></div>
+        <button onclick="hideLeaderboard()">Close</button>
+    </div>
+    <div id="musicMenu" style="display: none;">
+        <div class="content">
+            <h1>Music</h1>
+            <p>Control your game music!</p>
+            <img id="currentTrackImg" src="AutomotivoBayside.png" alt="Track Image">
+            <p id="currentTrackName">Automotivo Bayside</p>
+            <button id="playPauseBtn" onclick="toggleMusic()"></button>
+            <label for="volumeSlider" style="font-size: 16px; color: #00b7eb;">Volume:</label>
+            <input type="range" id="volumeSlider" min="0" max="100" value="50" oninput="adjustVolume(this.value)">
+            <div id="trackList">
+                <div class="track-item" onclick="changeTrack('Automotivo Bayside')">
+                    <img src="AutomotivoBayside.png" alt="Automotivo Bayside">
+                    <span>Automotivo Bayside</span>
+                </div>
+                <div class="track-item" onclick="changeTrack('EA')">
+                    <img src="EA.png" alt="EA">
+                    <span>EA</span>
+                </div>
+                <div class="track-item" onclick="changeTrack('Not like us')">
+                    <img src="Notlikeus.png" alt="Not like us">
+                    <span>Not like us</span>
+                </div>
+                <div class="track-item" onclick="changeTrack('Alright')">
+                    <img src="Alright.png" alt="Alright">
+                    <span>Alright</span>
+                </div>
+            </div>
+            <button onclick="hideMusic()">Close</button>
+        </div>
+    </div>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let gameRunning = false;
+        let tokensCollected = 0;
+        let tokenAnimation = 0;
+
+        const jumpSound = new Audio('jump.mp3');
+        const bonusSound = new Audio('bonus.mp3');
+        const tracks = {
+            'Automotivo Bayside': { audio: new Audio('Automotivo Bayside.mp3'), image: 'AutomotivoBayside.png' },
+            'EA': { audio: new Audio('EA.mp3'), image: 'EA.png' },
+            'Not like us': { audio: new Audio('Not like us.mp3'), image: 'Notlikeus.png' },
+            'Alright': { audio: new Audio('Alright.mp3'), image: 'Alright.png' }
+        };
+        let currentTrack = 'Automotivo Bayside';
+        let backgroundMusic = tracks[currentTrack].audio;
+        backgroundMusic.loop = true;
+        backgroundMusic.volume = 0.5;
+
+        jumpSound.onerror = () => console.error('Error loading jump.mp3');
+        bonusSound.onerror = () => console.error('Error loading bonus.mp3');
+        for (let track in tracks) {
+            tracks[track].audio.onerror = () => console.error(`Error loading ${track}.mp3`);
+        }
+
+        const backgroundImg = new Image();
+        backgroundImg.src = 'Background.png';
+
+        const backBackgroundImg = new Image();
+        backBackgroundImg.src = 'backgrounGAME.png';
+
+        const floorImg = new Image();
+        floorImg.src = 'down.png';
+
+        const playerImg = new Image();
+        playerImg.src = 'Player.png';
+
+        const pereshkodaImg = new Image();
+        pereshkodaImg.src = 'Pereshkoda.png';
+
+        const tokenImg = new Image();
+        tokenImg.src = 'Token.png';
+
+        const floorHeight = 40;
+        const gravity = 0.5;
+        const obstacleSpeed = 5;
+        const backBackgroundSpeed = obstacleSpeed * 0.5;
+
+        const playerHeightLevel = 660;
+        const obstacleHeightLevel = 670;
+        const tokenHeightLevel = 700;
+        const jumpStrength = -20;
+        const collisionOffset = 25;
+        const collisionOffsetRight = -50;
+        const collisionOffsetTop = 20;
+        const collisionOffsetBottom = -40;
+        const tokenCollisionOffset = 0;
+        const tokenCollisionOffsetRight = 0;
+        const tokenCollisionOffsetTop = 0;
+        const tokenCollisionOffsetBottom = 0;
+
+        const spawnProbability = 0.01;
+        const doubleSpawnChance = 0.5;
+        const minDistance = 400;
+        const tokenSpawnChance = 0.56;
+
+        let lastObstacleX = canvas.width + 100;
+        let lastObstacleCount = 0;
+        let backgroundX = 0;
+        let backBackgroundX = 0;
+        let obstacles = [];
+        let tokens = [];
+        let frameCount = 0;
+
+        let playerNickname = '';
+        let leaderboard = {};
+        let gameStartTime = null;
+        let isMusicPlaying = false;
+
+        const encryptionKey = 'SuccinctGOKey123';
+
+        try {
+            const savedData = localStorage.getItem('succinctLeaderboard');
+            if (savedData) {
+                try {
+                    const decrypted = decrypt(savedData);
+                    leaderboard = JSON.parse(decrypted);
+                    if (!verifyHash(decrypted)) {
+                        console.warn('Leaderboard hash mismatch! Checking for unencrypted data.');
+                        leaderboard = JSON.parse(savedData);
+                    }
+                } catch (e) {
+                    console.warn('Decryption failed, trying unencrypted data:', e);
+                    leaderboard = JSON.parse(savedData);
+                }
+            } else {
+                leaderboard = {};
+            }
+        } catch (e) {
+            console.error('Error initializing leaderboard:', e);
+            leaderboard = {};
+        }
+
+        const player = {
+            x: 50,
+            y: playerHeightLevel,
+            width: 158,
+            height: 119,
+            velocityY: 0,
+            jumping: false,
+            startHeight: playerHeightLevel
+        };
+
+        function encrypt(data) {
+            const str = JSON.stringify(data);
+            let result = '';
+            for (let i = 0; i < str.length; i++) {
+                const charCode = str.charCodeAt(i) ^ encryptionKey.charCodeAt(i % encryptionKey.length);
+                result += String.fromCharCode(charCode);
+            }
+            return btoa(result);
+        }
+
+        function decrypt(encrypted) {
+            const decoded = atob(encrypted);
+            let result = '';
+            for (let i = 0; i < decoded.length; i++) {
+                const charCode = decoded.charCodeAt(i) ^ encryptionKey.charCodeAt(i % encryptionKey.length);
+                result += String.fromCharCode(charCode);
+            }
+            return result;
+        }
+
+        function generateHash(data) {
+            const salt = 'SuccinctSalt';
+            let hash = 0;
+            const combined = data + salt;
+            for (let i = 0; i < combined.length; i++) {
+                hash += combined.charCodeAt(i);
+            }
+            return hash.toString(16);
+        }
+
+        function verifyHash(data) {
+            const storedHash = localStorage.getItem('succinctLeaderboardHash');
+            const computedHash = generateHash(data);
+            console.log('Stored hash:', storedHash, 'Computed hash:', computedHash);
+            return storedHash === computedHash;
+        }
+
+        function validateScore(score) {
+            if (!gameStartTime) return score;
+            const elapsedTime = (Date.now() - gameStartTime) / 1000;
+            const maxPossibleTokens = Math.floor(elapsedTime / 2);
+            if (score > maxPossibleTokens) {
+                console.warn(`Score ${score} exceeds maximum possible (${maxPossibleTokens}) for ${elapsedTime}s. Adjusting.`);
+                return maxPossibleTokens;
+            }
+            return score;
+        }
+
+        function updateLeaderboard(nickname, score) {
+            if (!nickname) nickname = 'Anonymous';
+            score = validateScore(score);
+            if (!leaderboard[nickname] || score > leaderboard[nickname]) {
+                leaderboard[nickname] = score;
+                try {
+                    const dataString = JSON.stringify(leaderboard);
+                    const encryptedData = encrypt(leaderboard);
+                    const hash = generateHash(dataString);
+                    localStorage.setItem('succinctLeaderboard', encryptedData);
+                    localStorage.setItem('succinctLeaderboardHash', hash);
+                    console.log(`Leaderboard updated: ${nickname} - ${score}`);
+                } catch (e) {
+                    console.error('Error saving leaderboard to localStorage:', e);
+                }
+            }
+        }
+
+        function showLeaderboard() {
+            const leaderboardContainer = document.getElementById('leaderboardContainer');
+            const leaderboardList = document.getElementById('leaderboardList');
+            let leaderboardText = '';
+            const sortedLeaderboard = Object.entries(leaderboard)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+            for (let [nick, score] of sortedLeaderboard) {
+                leaderboardText += `${nick}: ${score} tokens\n`;
+            }
+            leaderboardList.innerText = leaderboardText || 'No scores yet!';
+            try {
+                leaderboardContainer.style.display = 'block';
+                document.getElementById('menu').style.display = 'none';
+            } catch (e) {
+                console.error('Error showing leaderboard:', e);
+                leaderboardContainer.style.display = 'none';
+                document.getElementById('menu').style.display = 'block';
+            }
+        }
+
+        function hideLeaderboard() {
+            try {
+                document.getElementById('leaderboardContainer').style.display = 'none';
+                document.getElementById('menu').style.display = 'block';
+            } catch (e) {
+                console.error('Error hiding leaderboard:', e);
+                document.getElementById('menu').style.display = 'block';
+            }
+        }
+
+        function showMusic() {
+            document.getElementById('menu').style.display = 'none';
+            document.getElementById('musicMenu').style.display = 'block';
+            document.getElementById('playPauseBtn').classList.toggle('playing', isMusicPlaying);
+            document.getElementById('currentTrackName').textContent = currentTrack;
+            document.getElementById('currentTrackImg').src = tracks[currentTrack].image;
+        }
+
+        function hideMusic() {
+            document.getElementById('musicMenu').style.display = 'none';
+            document.getElementById('menu').style.display = 'block';
+        }
+
+        function toggleMusic() {
+            if (isMusicPlaying) {
+                backgroundMusic.pause();
+                isMusicPlaying = false;
+            } else {
+                backgroundMusic.play().catch(error => console.error('Error playing background music:', error));
+                isMusicPlaying = true;
+            }
+            document.getElementById('playPauseBtn').classList.toggle('playing', isMusicPlaying);
+        }
+
+        function adjustVolume(value) {
+            const volume = value / 100;
+            backgroundMusic.volume = volume;
+        }
+
+        function changeTrack(trackName) {
+            if (currentTrack !== trackName) {
+                backgroundMusic.pause();
+                currentTrack = trackName;
+                backgroundMusic = tracks[currentTrack].audio;
+                backgroundMusic.loop = true;
+                backgroundMusic.volume = document.getElementById('volumeSlider').value / 100;
+                backgroundMusic.currentTime = 0;
+                document.getElementById('currentTrackName').textContent = currentTrack;
+                document.getElementById('currentTrackImg').src = tracks[currentTrack].image;
+                if (isMusicPlaying) {
+                    backgroundMusic.play().catch(error => console.error('Error playing background music:', error));
+                }
+            }
+        }
+
+        function startGame() {
+            console.log('Starting game...');
+            playerNickname = prompt('Enter your nickname:', 'Player')?.trim();
+            if (!playerNickname) playerNickname = 'Anonymous';
+            document.getElementById('menu').style.display = 'none';
+            canvas.style.display = 'block';
+            gameRunning = true;
+            obstacles = [];
+            tokens = [];
+            tokensCollected = 0;
+            frameCount = 0;
+            lastObstacleX = canvas.width + 100;
+            lastObstacleCount = 0;
+            backgroundX = 0;
+            backBackgroundX = 0;
+            player.y = playerHeightLevel;
+            player.velocityY = 0;
+            player.jumping = false;
+            gameStartTime = Date.now();
+            gameLoop();
+        }
+
+        function exitGame() {
+            if (confirm('Are you sure you want to exit?')) {
+                window.close();
+            }
+        }
+
+        function restartGame() {
+            console.log('Restarting game...');
+            document.getElementById('gameOver').style.display = 'none';
+            startGame();
+        }
+
+        function returnToMenu() {
+            console.log('Returning to menu...');
+            document.getElementById('gameOver').style  = 'none';
+            document.getElementById('menu').style.display = 'block';
+            canvas.style.display = 'none';
+            obstacles = [];
+            tokens = [];
+            tokensCollected = 0;
+            frameCount = 0;
+            lastObstacleX = canvas.width + 100;
+            lastObstacleCount = 0;
+            backgroundX = 0;
+            backBackgroundX = 0;
+            gameRunning = false;
+            showLeaderboard();
+            hideLeaderboard();
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && !player.jumping && player.y === player.startHeight && gameRunning) {
+                console.log('Player jumping...');
+                player.velocityY = jumpStrength;
+                player.jumping = true;
+                player.startHeight = player.y;
+                jumpSound.currentTime = 0;
+                jumpSound.play().catch(error => console.error('Error playing jump sound:', error));
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.code === 'Space') {
+                console.log('Jump ended...');
+                player.jumping = false;
+            }
+        });
+
+        function spawnObstacle() {
+            if (Math.random() > spawnProbability) return;
+
+            let canSpawn = true;
+            if (obstacles.length > 0) {
+                let lastObstacle = obstacles[obstacles.length - 1];
+                if (lastObstacle.x + minDistance > canvas.width) {
+                    canSpawn = false;
+                }
+            }
+
+            if (!canSpawn) return;
+
+            let numberOfObstacles = Math.random() > doubleSpawnChance ? 1 : 2;
+            for (let i = 0; i < numberOfObstacles; i++) {
+                const obstacle = {
+                    x: canvas.width + (i * 76),
+                    y: obstacleHeightLevel,
+                    width: 128,
+                    height: 128,
+                    passed: false
+                };
+                obstacles.push(obstacle);
+            }
+            lastObstacleX = canvas.width + (numberOfObstacles - 1) * 76;
+            lastObstacleCount = numberOfObstacles;
+
+            if (Math.random() < tokenSpawnChance) {
+                let lastGroupEndX = lastObstacleX;
+                if (lastObstacleCount === 2) lastGroupEndX += 76;
+
+                let nextGroupStartX = lastGroupEndX + minDistance;
+                let tokenX = lastGroupEndX + (nextGroupStartX - lastGroupEndX) / 2;
+
+                let tooClose = false;
+                for (let i = 0; i < obstacles.length; i++) {
+                    let obstacle = obstacles[i];
+                    let distanceToObstacle = Math.abs(tokenX - (obstacle.x + obstacle.width / 2));
+                    if (distanceToObstacle < 100) {
+                        tooClose = true;
+                        break;
+                    }
+                }
+
+                if (!tooClose) {
+                    const token = {
+                        x: tokenX,
+                        y: tokenHeightLevel,
+                        width: 60,
+                        height: 60,
+                        collected: false
+                    };
+                    tokens.push(token);
+                }
+            }
+        }
+
+        function checkObstacleCollision(player, obstacle) {
+            const adjustedPlayerXLeft = player.x + collisionOffset;
+            const adjustedPlayerXRight = player.x + player.width + collisionOffsetRight;
+            const adjustedPlayerYTop = player.y + collisionOffsetTop;
+            const adjustedPlayerYBottom = player.y + player.height + collisionOffsetBottom;
+
+            const collisionX = adjustedPlayerXLeft < obstacle.x + obstacle.width &&
+                              adjustedPlayerXRight > obstacle.x;
+            const collisionY = adjustedPlayerYTop < obstacle.y + obstacle.height &&
+                              adjustedPlayerYBottom > obstacle.y;
+
+            return collisionX && collisionY;
+        }
+
+        function checkTokenCollision(player, token) {
+            const adjustedPlayerXLeft = player.x + tokenCollisionOffset;
+            const adjustedPlayerXRight = player.x + player.width + tokenCollisionOffsetRight;
+            const adjustedPlayerYTop = player.y + tokenCollisionOffsetTop;
+            const adjustedPlayerYBottom = player.y + player.height + tokenCollisionOffsetBottom;
+
+            const collisionX = adjustedPlayerXLeft < token.x + token.width &&
+                              adjustedPlayerXRight > token.x;
+            const collisionY = adjustedPlayerYTop < token.y + token.height &&
+                              adjustedPlayerYBottom > token.y;
+
+            if (collisionX && collisionY) {
+                tokenAnimation = 10;
+                return true;
+            }
+            return false;
+        }
+
+        function gameLoop() {
+            if (!gameRunning) return;
+
+            console.log('Game loop running, frameCount:', frameCount, 'player.y:', player.y, 'obstacles:', obstacles.length);
+
+            backBackgroundX -= backBackgroundSpeed;
+            if (backBackgroundX <= -canvas.width) backBackgroundX = 0;
+            ctx.drawImage(backBackgroundImg, backBackgroundX, 0, canvas.width, 900 - floorHeight);
+            ctx.drawImage(backBackgroundImg, backBackgroundX + canvas.width, 0, canvas.width, 900 - floorHeight);
+
+            backgroundX -= obstacleSpeed;
+            if (backgroundX <= -canvas.width) backgroundX = 0;
+            ctx.drawImage(backgroundImg, backgroundX, 0, canvas.width, 900 - floorHeight);
+            ctx.drawImage(backgroundImg, backgroundX + canvas.width, 0, canvas.width, 900 - floorHeight);
+
+            ctx.drawImage(floorImg, 0, 900 - floorHeight, canvas.width, floorHeight);
+
+            if (player.jumping || player.y < player.startHeight) {
+                player.velocityY += gravity;
+                player.y += player.velocityY;
+            }
+            if (player.y >= player.startHeight) {
+                player.y = player.startHeight;
+                player.velocityY = 0;
+                player.jumping = false;
+            }
+
+            ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
+
+            frameCount++;
+            if (frameCount > 30) {
+                spawnObstacle();
+            }
+
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                obstacles[i].x -= obstacleSpeed;
+                ctx.drawImage(pereshkodaImg, obstacles[i].x, obstacles[i].y, obstacles[i].width, obstacles[i].height);
+
+                if (checkObstacleCollision(player, obstacles[i])) {
+                    console.log('Collision detected, tokensCollected:', tokensCollected, 'obstacle.x:', obstacles[i].x, 'player.x:', player.x);
+                    document.getElementById('finalScore').textContent = tokensCollected;
+                    document.getElementById('gameOver').style.display = 'block';
+                    gameRunning = false;
+                    updateLeaderboard(playerNickname, tokensCollected);
+                    return;
+                }
+
+                if (obstacles[i].x + obstacles[i].width < 0) obstacles.splice(i, 1);
+            }
+
+            for (let i = tokens.length - 1; i >= 0; i--) {
+                tokens[i].x -= obstacleSpeed;
+                if (!tokens[i].collected) {
+                    ctx.drawImage(tokenImg, tokens[i].x, tokens[i].y, tokens[i].width, tokens[i].height);
+                }
+
+                if (!tokens[i].collected && checkTokenCollision(player, tokens[i])) {
+                    console.log('Token collected, new tokens:', tokensCollected + 1);
+                    tokens[i].collected = true;
+                    tokensCollected += 1;
+                    bonusSound.currentTime = 0;
+                    bonusSound.play().catch(error => console.error('Error playing bonus sound:', error));
+                }
+
+                if (tokens[i].x + tokens[i].width < 0) tokens.splice(i, 1);
+            }
+
+            const tokenText = `${tokensCollected}`;
+            const textX = canvas.width / 2 - 20;
+            const textY = 62;
+
+            let animationScale = 1;
+            if (tokenAnimation > 0) {
+                animationScale = 1 + Math.sin(tokenAnimation * 0.5) * 0.2;
+                tokenAnimation--;
+            }
+            ctx.save();
+            ctx.translate(textX + 20, textY);
+            ctx.scale(animationScale, animationScale);
+            ctx.translate(-(textX + 20), -textY);
+
+            const boxSize = 50;
+            const boxX = textX - 15;
+            const boxY = textY - 35;
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            ctx.roundRect(boxX, boxY, boxSize, boxSize, 10);
+            ctx.fill();
+
+            ctx.strokeStyle = '#FFD700';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.font = 'bold 36px CrabFont';
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+            ctx.shadowBlur = 5;
+            ctx.shadowOffsetX = 2;
+            ctx.shadowOffsetY = 2;
+            ctx.fillStyle = '#FFFFFF';
+            ctx.textAlign = 'center';
+            ctx.fillText(tokenText, textX + 10, textY);
+
+            ctx.drawImage(tokenImg, boxX - 40, boxY + 5, 40, 40);
+
+            ctx.restore();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        Promise.all([
+            new Promise(resolve => backgroundImg.onload = resolve),
+            new Promise(resolve => backBackgroundImg.onload = resolve),
+            new Promise(resolve => floorImg.onload = resolve),
+            new Promise(resolve => playerImg.onload = resolve),
+            new Promise(resolve => pereshkodaImg.onload = resolve),
+            new Promise(resolve => tokenImg.onload = resolve),
+            new Promise(resolve => {
+                jumpSound.oncanplaythrough = resolve;
+                jumpSound.onerror = () => console.error('Error loading jump.mp3');
+            }),
+            new Promise(resolve => {
+                bonusSound.oncanplaythrough = resolve;
+                bonusSound.onerror = () => console.error('Error loading bonus.mp3');
+            }),
+            ...Object.values(tracks).map(track => new Promise(resolve => {
+                track.audio.oncanplaythrough = resolve;
+                track.audio.onerror = () => console.error(`Error loading ${track.audio.src}`);
+            }))
+        ]).then(() => {
+            console.log('Images and sounds loaded, game ready to start');
+        });
+    </script>
+</body>
+</html>
