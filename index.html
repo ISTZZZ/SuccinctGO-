@@ -12,6 +12,7 @@
             background-size: cover;
             overflow: hidden;
             height: 100vh;
+            touch-action: manipulation;
         }
         canvas {
             display: none;
@@ -135,7 +136,7 @@
             display: none;
         }
         #musicMenu .content {
-            margin-top: 10%; /* Змінив значення, щоб опустити вміст нижче */
+            margin-top: 10%;
         }
         #volumeSlider {
             width: 200px;
@@ -586,7 +587,7 @@
 
         function returnToMenu() {
             console.log('Returning to menu...');
-            document.getElementById('gameOver').style  = 'none';
+            document.getElementById('gameOver').style.display = 'none';
             document.getElementById('menu').style.display = 'block';
             canvas.style.display = 'none';
             obstacles = [];
@@ -602,14 +603,21 @@
             hideLeaderboard();
         }
 
-        document.addEventListener('keydown', (e) => {
-            if (e.code === 'Space' && !player.jumping && player.y === player.startHeight && gameRunning) {
+        function jump() {
+            if (!player.jumping && player.y === player.startHeight && gameRunning) {
                 console.log('Player jumping...');
                 player.velocityY = jumpStrength;
                 player.jumping = true;
                 player.startHeight = player.y;
                 jumpSound.currentTime = 0;
                 jumpSound.play().catch(error => console.error('Error playing jump sound:', error));
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                jump();
             }
         });
 
@@ -618,6 +626,17 @@
                 console.log('Jump ended...');
                 player.jumping = false;
             }
+        });
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            jump();
+        });
+
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            console.log('Jump ended...');
+            player.jumping = false;
         });
 
         function spawnObstacle() {
